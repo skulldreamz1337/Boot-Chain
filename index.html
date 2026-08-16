@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0B0D10" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Boot Chain" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="icon" href="icon-192.png" />
+<title>Boot Chain — field reference</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0B0D10;
+    --panel: #14171B;
+    --panel-alt: #1B1F24;
+    --border: #262B31;
+    --border-light: #31373F;
+    --text: #E7E4DD;
+    --text-dim: #8A8F98;
+    --text-dimmer: #565C64;
+    --amber: #E8A33D;
+    --amber-dim: #4A3A22;
+    --blue: #6E9DC4;
+    --green: #6FAE86;
+    --red: #C0645B;
+    --f-display: 'Space Grotesk', sans-serif;
+    --f-body: 'Inter', sans-serif;
+    --f-mono: 'IBM Plex Mono', monospace;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--f-body); }
+  body { padding-bottom: env(safe-area-inset-bottom); }
+  ::selection { background: var(--amber-dim); color: var(--amber); }
+  button { font: inherit; }
+  button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  .wrap { max-width: 720px; margin: 0 auto; padding: 36px 20px 60px; }
+  .eyebrow { font-family: var(--f-mono); color: var(--text-dimmer); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; }
+  h1 { font-family: var(--f-display); font-size: clamp(28px,7vw,40px); font-weight: 700; margin: 0; }
+  .lede { color: var(--text-dim); font-size: 15px; max-width: 520px; margin: 10px 0 0; line-height: 1.5; }
+
+  .slotbar { display:flex; align-items:center; justify-content:space-between; margin: 32px 0; padding: 12px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
+  .slotbar-label { display:flex; align-items:center; gap:8px; font-family: var(--f-mono); font-size:13px; color: var(--text-dim); }
+  .slotbtns { display:flex; gap:8px; }
+  .slotbtn { font-family: var(--f-mono); font-size:13px; padding:6px 16px; border-radius:6px; background:transparent; color: var(--text-dim); border:1px solid var(--border); font-weight:600; cursor:pointer; }
+  .slotbtn.active { background: var(--amber); color: var(--bg); border-color: var(--amber); }
+
+  h2 { font-family: var(--f-display); font-size:20px; font-weight:600; margin: 0 0 4px; }
+  .sub { color: var(--text-dimmer); font-size:13px; margin: 0 0 20px; }
+  .sub b { color: var(--text-dim); font-family: var(--f-mono); font-weight:500; }
+
+  section { margin-bottom: 52px; }
+
+  .stage { display:flex; gap:16px; position: relative; }
+  .rail { display:flex; flex-direction:column; align-items:center; width:32px; flex-shrink:0; }
+  .dot { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; background: var(--panel-alt); border:1px solid var(--border); color: var(--text-dim); flex-shrink:0; font-size: 14px; }
+  .dot.open { background: var(--stage-accent); border-color: var(--stage-accent); color: var(--bg); }
+  .line { width:1px; flex:1; background: var(--border); min-height:12px; }
+  .stage-body { flex:1; padding-bottom: 24px; }
+  .stage-head { width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; text-align:left; background:none; border:none; color: var(--text); cursor:pointer; padding:0; }
+  .stage-n { font-family: var(--f-mono); color: var(--text-dimmer); font-size:12px; }
+  .stage-label { font-family: var(--f-display); font-weight:600; font-size:16px; }
+  .stage-sub { color: var(--text-dimmer); font-size:13px; margin-left:8px; }
+  .chev { color: var(--text-dimmer); transition: transform .12s ease; flex-shrink:0; }
+  .chev.open { transform: rotate(90deg); }
+  .stage-detail { margin-top:12px; max-width:520px; display:none; }
+  .stage-detail.open { display:block; }
+  .stage-detail p { font-size:14px; line-height:1.6; color: var(--text); margin:0; }
+  .field { margin-top:12px; padding:12px 16px; border-radius:8px; background: var(--panel-alt); border-left:2px solid var(--amber); }
+  .field.red { border-left-color: var(--red); }
+  .field-label { display:flex; align-items:center; gap:6px; font-family: var(--f-mono); font-size:11px; color: var(--amber); letter-spacing:.05em; margin-bottom:4px; text-transform:uppercase; }
+  .field.red .field-label { color: var(--red); }
+  .field p { font-size:13.5px; line-height:1.55; color: var(--text-dim); margin:0; }
+
+  .group-label { font-family: var(--f-mono); font-size:11px; color: var(--text-dimmer); letter-spacing:.05em; text-transform:uppercase; margin-bottom:8px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; }
+  .chip { font-family: var(--f-mono); font-size:13px; padding:8px 12px; border-radius:6px; background: var(--panel-alt); border:1px solid var(--border); color: var(--text); cursor:pointer; }
+  .chip.active { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+  .superbox { padding:16px; border-radius:10px; background: var(--panel); border:1px solid var(--border); margin-bottom:24px; }
+  .superbox .chips { margin-bottom:12px; }
+  .superbox .note { font-size:12.5px; color: var(--text-dimmer); line-height:1.5; margin:0; }
+
+  .detail { padding:16px; border-radius:10px; background: var(--panel-alt); border:1px solid var(--border-light); }
+  .detail-name { font-family: var(--f-mono); font-size:14px; color: var(--amber); font-weight:600; margin-bottom:6px; }
+  .detail p.body { font-size:14px; line-height:1.6; color: var(--text); margin:0; }
+
+  footer { font-family: var(--f-mono); font-size:12px; color: var(--text-dimmer); border-top:1px solid var(--border); padding-top:20px; margin-top:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Field reference — Android Verified Boot</div>
+  <h1>Boot Chain</h1>
+  <p class="lede">Power-on to system, one verified stage at a time — with the partition layout it depends on. Built around the parts that actually bit you on froggerPro and fogo.</p>
+
+  <div class="slotbar">
+    <div class="slotbar-label">↺ active slot</div>
+    <div class="slotbtns" id="slotbtns"></div>
+  </div>
+
+  <section>
+    <h2>The sequence</h2>
+    <p class="sub">Each stage only runs if the one before it verified successfully. Tap a stage.</p>
+    <div id="stages"></div>
+  </section>
+
+  <section>
+    <h2>Partition map</h2>
+    <p class="sub">Fixed-size, per-slot partitions vs. the dynamic ones packed inside <b>super</b>.</p>
+
+    <div class="group-label">Fixed, per-slot</div>
+    <div class="chips" id="fixedChips"></div>
+
+    <div class="group-label">Dynamic — packed inside super</div>
+    <div class="superbox">
+      <div class="chips" id="dynChips"></div>
+      <p class="note">super is one physical partition; everything above is a logical volume inside it, sized on the fly rather than fixed in the GPT.</p>
+    </div>
+
+    <div id="detailPanel"></div>
+  </section>
+
+  <footer>skulldreamz — personal reference, works offline</footer>
+</div>
+
+<script>
+const ICONS = {
+  cpu: '⌁', layers: '▤', hdd: '▥', shield: '◈', play: '▶', branch: '⑂'
+};
+
+const STAGES = [
+  { id:'pbl', n:'1', label:'PBL', sub:'Primary Boot Loader', icon:ICONS.cpu, accent:'var(--text-dim)',
+    desc:"Burned into on-chip ROM at fab time. Immutable — this is the root of trust. It has just enough logic to find and authenticate the next stage against a key fused into the SoC, then jumps to it.",
+    field:null },
+  { id:'xbl', n:'2', label:'XBL / SBL', sub:'eXtensible / Secondary Boot Loader', icon:ICONS.layers, accent:'var(--text-dim)',
+    desc:"Brings up DDR, then loads and authenticates the rest of the early firmware — TrustZone, hypervisor, PMIC config, AOP — before handing control to ABL. Still well below anything you flash.",
+    field:null },
+  { id:'abl', n:'3', label:'ABL', sub:'Android Bootloader (aboot)', icon:ICONS.hdd, accent:'var(--amber)',
+    desc:"The first stage that actually cares which slot you're on. Reads active-slot state, loads boot_<slot> (or vendor_boot_<slot> on header v3/v4 devices) and dtbo_<slot>, checks the misc partition for a pending BCB command, and decides normal boot vs. recovery vs. fastboot before it verifies anything.",
+    field:{ label:'field note', text:"This is the layer fastboot getvar all is talking to. Every slot query, every delete-logical-partition — it's all ABL/fastbootd, one level above the kernel." } },
+  { id:'avb', n:'4', label:'AVB', sub:'Android Verified Boot — vbmeta chain', icon:ICONS.shield, accent:'var(--blue)',
+    desc:"vbmeta_<slot> is the root of a hash chain covering boot, vendor_boot, dtbo, and (via vbmeta_system) the dynamic partitions. Each descriptor is checked before its partition is trusted, and a rollback index blocks flashing back to an older signed image. An unlocked bootloader downgrades failures here to a warning instead of a hard stop.",
+    field:null },
+  { id:'kernel', n:'5', label:'Kernel + init', sub:'First-stage init, super mount', icon:ICONS.play, accent:'var(--amber)',
+    desc:"Kernel unpacks from boot_<slot> and runs the generic ramdisk's first-stage init, which brings up device-mapper, mounts the logical partitions living inside super, and switches root into system for second-stage init.",
+    field:{ label:'field note — Mission K-002', text:"Confirmed: a kernel-less, ramdisk-only recovery image flashed to recovery_a still boots fine, because ABL pulls the actual kernel and DTB from boot_a/vendor_boot_a regardless — recovery doesn't need to carry its own kernel." } },
+  { id:'branch', n:'6', label:'Branch', sub:'System vs. recovery', icon:ICONS.branch, accent:'var(--green)',
+    desc:"Normal path continues into system. If misc's BCB says boot-recovery, the same boot ramdisk instead launches the recovery UI — on modern GKI A/B devices recovery is merged into boot, not a separate partition.",
+    field:{ label:'field note — Project Keystone', text:"TWFunc::Clear_Bootloader_Message() runs on every reboot and calls ReadDefaultFstab(), which — only in recovery — looks for a hardcoded /etc/recovery.fstab. On froggerPro that file never existed, so every reboot-to-system loop landed straight back in recovery. Fix was adding recovery/root/etc/recovery.fstab to the device tree, not touching the BCB logic itself." } },
+];
+
+const FIXED = [
+  { name:'boot', slotted:true, desc:"GKI kernel + generic ramdisk (header v3/v4 splits vendor bits out into vendor_boot). What ABL hands the CPU after AVB clears it." },
+  { name:'vendor_boot', slotted:true, desc:"Vendor ramdisk + DTB on split-header devices. Loaded alongside boot_<slot>, verified by the same vbmeta chain." },
+  { name:'dtbo', slotted:true, desc:"Device tree overlays — board revision and peripheral config layered onto the base DTB at boot time." },
+  { name:'vbmeta / vbmeta_system', slotted:true, desc:"Root and sub-root of the AVB hash chain. vbmeta covers boot-time partitions; vbmeta_system extends trust down into the dynamic partitions in super." },
+  { name:'misc', slotted:false, desc:"Holds the Bootloader Control Block (BCB) — a small struct with a command field ABL reads on every boot to decide boot-recovery / boot-fastboot / normal. The perpetually-looping-back-into-recovery bug always traces to something touching this partition." },
+];
+
+const DYNAMIC = ['system','vendor','product','system_ext','odm','system_dlkm','vendor_dlkm'];
+
+let slot = 'a';
+let openStage = 'abl';
+let selectedPartition = FIXED[4];
+
+function renderSlotBtns() {
+  const el = document.getElementById('slotbtns');
+  el.innerHTML = '';
+  ['a','b'].forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'slotbtn' + (slot === s ? ' active' : '');
+    b.textContent = 'slot_' + s;
+    b.onclick = () => { slot = s; render(); };
+    el.appendChild(b);
+  });
+}
+
+function renderStages() {
+  const el = document.getElementById('stages');
+  el.innerHTML = '';
+  STAGES.forEach((stage, i) => {
+    const isOpen = openStage === stage.id;
+    const row = document.createElement('div');
+    row.className = 'stage';
+
+    const rail = document.createElement('div');
+    rail.className = 'rail';
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (isOpen ? ' open' : '');
+    dot.style.setProperty('--stage-accent', stage.accent);
+    dot.textContent = stage.icon;
+    rail.appendChild(dot);
+    if (i !== STAGES.length - 1) {
+      const line = document.createElement('div');
+      line.className = 'line';
+      rail.appendChild(line);
+    }
+
+    const body = document.createElement('div');
+    body.className = 'stage-body';
+    const head = document.createElement('button');
+    head.className = 'stage-head';
+    head.innerHTML = `<div><span class="stage-n">${stage.n}</span> <span class="stage-label">${stage.label}</span><span class="stage-sub">${stage.sub}</span></div><span class="chev${isOpen ? ' open' : ''}">›</span>`;
+    head.onclick = () => { openStage = isOpen ? null : stage.id; render(); };
+    body.appendChild(head);
+
+    const detail = document.createElement('div');
+    detail.className = 'stage-detail' + (isOpen ? ' open' : '');
+    let fieldHtml = '';
+    if (stage.field) {
+      fieldHtml = `<div class="field"><div class="field-label">▸ ${stage.field.label}</div><p>${stage.field.text}</p></div>`;
+    }
+    detail.innerHTML = `<p>${stage.desc}</p>${fieldHtml}`;
+    body.appendChild(detail);
+
+    row.appendChild(rail);
+    row.appendChild(body);
+    el.appendChild(row);
+  });
+}
+
+function renderPartitions() {
+  const fixedEl = document.getElementById('fixedChips');
+  fixedEl.innerHTML = '';
+  FIXED.forEach(p => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (selectedPartition && selectedPartition.name === p.name ? ' active' : '');
+    chip.textContent = p.slotted ? `${p.name}_${slot}` : p.name;
+    chip.onclick = () => { selectedPartition = p; render(); };
+    fixedEl.appendChild(chip);
+  });
+
+  const dynEl = document.getElementById('dynChips');
+  dynEl.innerHTML = '';
+  DYNAMIC.forEach(name => {
+    const chip = document.createElement('button');
+    const isActive = selectedPartition && selectedPartition.name === name;
+    chip.className = 'chip' + (isActive ? ' active' : '');
+    chip.textContent = `${name}_${slot}`;
+    chip.onclick = () => {
+      selectedPartition = {
+        name,
+        desc: `Logical partition ${name}_${slot}, mounted by device-mapper from inside the single physical super partition rather than its own GPT entry. During a virtual A/B OTA it gets a matching ${name}_${slot}-cow snapshot that holds changed blocks until the update is confirmed and merged.`
+      };
+      render();
+    };
+    dynEl.appendChild(chip);
+  });
+
+  const panel = document.getElementById('detailPanel');
+  if (!selectedPartition) { panel.innerHTML = ''; return; }
+
+  let extra = '';
+  if (selectedPartition.name === 'misc') {
+    extra = `<div class="field"><div class="field-label">▸ field note</div><p>A dd if=/dev/zero over misc always "fixes" a boot-recovery loop — it clears the stuck BCB command. It's a reset, not a diagnosis; the real bug is usually in whatever writes or reads the BCB, not the flag itself.</p></div>`;
+  } else if (selectedPartition.name === 'system_dlkm') {
+    extra = `<div class="field red"><div class="field-label">▸ field note — firmware downgrade</div><p>create-logical-partition system_dlkm_a failed with "not enough space" on a 9 GiB super that was already ~8.98 GiB full — mostly slot b's live partitions plus ~1.1 GiB of leftover -cow snapshots. Confirming snapshot-update-status was none, then deleting the seven -cow partitions, freed enough room for flash_all.bat to finish.</p></div>`;
+  }
+
+  panel.innerHTML = `<div class="detail"><div class="detail-name">${selectedPartition.name}</div><p class="body">${selectedPartition.desc}</p>${extra}</div>`;
+}
+
+function render() {
+  renderSlotBtns();
+  renderStages();
+  renderPartitions();
+}
+render();
+
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
