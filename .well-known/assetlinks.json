@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "io.github.skulldreamz1337.twa",
+    "sha256_cert_fingerprints": ["52:8A:1D:36:C8:6D:EA:4E:57:BD:E4:64:08:5E:91:15:96:B1:08:57:BF:5C:A8:3F:74:77:6D:A6:C1:56:58:AF"]
+  }
+}]
