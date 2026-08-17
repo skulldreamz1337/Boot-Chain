@@ -82,6 +82,8 @@
   .chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; }
   .chip { font-family: var(--f-mono); font-size:13px; padding:8px 12px; border-radius:6px; background: var(--panel-alt); border:1px solid var(--border); color: var(--text); cursor:pointer; }
   .chip.active { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+  .chip.nothing { border-color: var(--red); }
+  .chip.nothing.active { background: #4a2622; border-color: var(--red); color: var(--red); }
   .superbox { padding:16px; border-radius:10px; background: var(--panel); border:1px solid var(--border); margin-bottom:24px; }
   .superbox .chips { margin-bottom:12px; }
   .superbox .note { font-size:12.5px; color: var(--text-dimmer); line-height:1.5; margin:0; }
@@ -126,6 +128,22 @@
     <div id="detailPanel"></div>
   </section>
 
+  <section>
+    <h2>Device dump — froggerPro</h2>
+    <p class="sub">Captured via <b>adb shell ls -la /dev/block/bootdevice/by-name/</b> on Nothing Phone 4a Pro (SM7750). Every partition name the bootloader and Android actually reference on this device — not a generic Qualcomm list.</p>
+
+    <div class="group-label">Per-slot (A/B)</div>
+    <div class="chips" id="frAbChips"></div>
+
+    <div class="group-label">Fixed / single</div>
+    <div class="chips" id="frFixedChips"></div>
+
+    <div class="group-label">Nothing-specific</div>
+    <div class="chips" id="frNtChips"></div>
+
+    <div id="frDetailPanel"></div>
+  </section>
+
   <footer>skulldreamz — personal reference, works offline</footer>
 </div>
 
@@ -165,9 +183,98 @@ const FIXED = [
 
 const DYNAMIC = ['system','vendor','product','system_ext','odm','system_dlkm','vendor_dlkm'];
 
+// froggerPro (Nothing Phone 4a Pro) — from adb shell ls -la /dev/block/bootdevice/by-name/
+const FR_AB = [
+  { name:'abl', desc:"Android Bootloader — see stage 3 above." },
+  { name:'aop', desc:"Always-On Processor firmware — handles low-power sensor/wake logic while the AP sleeps." },
+  { name:'aop_config', desc:"Board-specific configuration blob loaded by the AOP firmware." },
+  { name:'bluetooth', desc:"Bluetooth subsystem firmware and calibration data." },
+  { name:'boot', desc:"GKI kernel + generic ramdisk — see stage 5 above." },
+  { name:'cpucp', desc:"CPU Control Processor firmware — manages DVFS/power sequencing on newer Snapdragon platforms." },
+  { name:'cpucp_dtb', desc:"Device tree blob specifically for the CPUCP firmware image." },
+  { name:'devcfg', desc:"TrustZone device configuration — access control policy for TZ-protected resources." },
+  { name:'dsp', desc:"Hexagon DSP firmware (audio/sensor/compute offload core)." },
+  { name:'dtbo', desc:"Device tree overlays — see FIXED entry above." },
+  { name:'featenabler', desc:"Feature-enablement firmware/config blob — gates SoC feature flags per SKU." },
+  { name:'hyp', desc:"Hypervisor image — brought up by XBL before TZ and the rest of the chain." },
+  { name:'imagefv', desc:"UEFI firmware volume container bundling several early-boot UEFI drivers." },
+  { name:'init_boot', desc:"Generic ramdisk split out on its own for GKI 2.0 devices, separate from boot." },
+  { name:'keymaster', desc:"Keymaster/KeyMint trusted-app firmware — backs Android's hardware-backed keystore." },
+  { name:'modem', desc:"Baseband/modem firmware image." },
+  { name:'multiimgoem', desc:"OEM-signed multi-image container — additional signed firmware blobs bundled together." },
+  { name:'multiimgqti', desc:"Qualcomm-signed multi-image container — analogous to multiimgoem but Qualcomm's own bundle." },
+  { name:'pvmfw', desc:"Protected VM firmware — boot firmware for the Android Virtualization Framework's protected VMs." },
+  { name:'qupfw', desc:"QUP (Qualcomm Universal Peripheral) firmware — serial bus controller firmware." },
+  { name:'qweslicstore', desc:"eSIM/feature entitlement license store." },
+  { name:'recovery', desc:"Standalone recovery image slot. Present here even though modern GKI devices usually merge recovery into boot — froggerPro keeps it separate, which is what PBRP/OrangeFox actually flash to." },
+  { name:'shrm', desc:"Shared Remote Heap Memory config — memory carve-out negotiation between AP and modem/DSP." },
+  { name:'soccp_dcd', desc:"SoC Control Processor dynamic clock/config data." },
+  { name:'soccp_debug', desc:"SoC Control Processor debug image/log buffer." },
+  { name:'spuservice', desc:"Secure Processing Unit service firmware." },
+  { name:'tz', desc:"TrustZone secure OS image." },
+  { name:'uefi', desc:"UEFI firmware/bootloader image. Coexists with abl_a/b on this device — worth verifying with your own boot log which one is the live entry point vs. a legacy/compat slot." },
+  { name:'uefisecapp', desc:"UEFI Secure App — trusted app handling DRM (e.g. Widevine) key operations." },
+  { name:'vbmeta', desc:"AVB root of trust — see stage 4 above." },
+  { name:'vbmeta_system', desc:"AVB sub-chain extending trust into dynamic partitions." },
+  { name:'vbmeta_vendor', desc:"AVB sub-chain specifically covering the vendor dynamic partition." },
+  { name:'vendor_boot', desc:"Vendor ramdisk + DTB — see FIXED entry above." },
+  { name:'vm-bootsys', desc:"Boot image for the Android Virtualization Framework's system VM." },
+  { name:'xbl', desc:"Secondary/eXtensible Bootloader — see stage 2 above." },
+  { name:'xbl_config', desc:"Configuration data consumed by the XBL stage." },
+  { name:'xbl_ramdump', desc:"RAM dump collection buffer written if the device crashes during the XBL stage." },
+];
+
+const FR_FIXED = [
+  { name:'ALIGN_TO_128K_1', desc:"Pure padding partition to keep later entries aligned to a 128K boundary on this storage layout — carries no data of interest." },
+  { name:'ALIGN_TO_128K_2', desc:"Second alignment padding partition, same purpose as ALIGN_TO_128K_1." },
+  { name:'apdp', desc:"Application processor panic/debug data — captures crash context on AP-side faults." },
+  { name:'apdpb', desc:"Secondary buffer for apdp, likely double-buffered so a crash during capture doesn't lose the previous log." },
+  { name:'binfo', desc:"Board info partition — hardware revision/config identifiers read early in boot." },
+  { name:'cdt', desc:"Chip Dependent Table — low-level SoC/board configuration consumed by PBL/XBL." },
+  { name:'connsec', desc:"Connectivity security data — key material for Wi-Fi/BT secure provisioning." },
+  { name:'ddr', desc:"DDR training/calibration data used during memory bring-up." },
+  { name:'devinfo', desc:"Device info partition — stores state like bootloader unlock status." },
+  { name:'dpm', desc:"Debug policy / device policy manager partition — gates what debug capabilities are enabled on this unit." },
+  { name:'frp', desc:"Factory Reset Protection state — survives a factory reset by design." },
+  { name:'fsc', desc:"Modem file system config — persistent modem-side configuration store." },
+  { name:'fsg', desc:"Modem general file system storage, paired with fsc." },
+  { name:'keystore', desc:"Secure key storage, distinct from the keymaster_a/b firmware itself." },
+  { name:'logfs', desc:"Persistent log filesystem — survives reboots for crash/debug log retention." },
+  { name:'mdcompress', desc:"Modem coredump compression buffer." },
+  { name:'metadata', desc:"Holds the metadata encryption key used to unlock userdata before it's mounted — critical for File-Based Encryption." },
+  { name:'misc', desc:"BCB — see FIXED entry above." },
+  { name:'modemst1', desc:"Modem NV/EFS storage — calibration data, IMEI, and other modem-side persistent state. Back this up before any modem-affecting flash." },
+  { name:'modemst2', desc:"Mirror/secondary copy of modemst1 for redundancy." },
+  { name:'oem', desc:"OEM-reserved data partition." },
+  { name:'persist', desc:"Persistent calibration and config data (sensors, etc.) — intentionally survives a factory reset." },
+  { name:'qmcs', desc:"Qualcomm modem coexistence/sync configuration." },
+  { name:'rawdump', desc:"Raw RAM dump storage captured on an AP-side crash." },
+  { name:'secdata', desc:"Security-related persistent data store." },
+  { name:'spunvm', desc:"Secure Processing Unit non-volatile memory." },
+  { name:'ssd', desc:"Secure Software Download partition — used during factory provisioning/QFIL flashing." },
+  { name:'storsec', desc:"Storage security configuration." },
+  { name:'super', desc:"Dynamic partition container — see DYNAMIC section above." },
+  { name:'toolsfv', desc:"Diagnostic tools UEFI firmware volume." },
+  { name:'tzsc', desc:"TrustZone secondary co-processor image." },
+  { name:'uefivarstore', desc:"UEFI NVRAM variable store — persists UEFI runtime variables across boots." },
+  { name:'userdata', desc:"User data partition — see stage 5 mount context above." },
+  { name:'vm-persist', desc:"Persistent storage for the Android Virtualization Framework's protected VMs." },
+  { name:'xbl_sc_logs', desc:"XBL secondary-core log buffer — debug-only." },
+  { name:'xbl_sc_test_mode', desc:"XBL secondary-core test mode flag/data — debug-only." },
+];
+
+const FR_NOTHING = [
+  { name:'nt_kmsg', desc:"Nothing-specific persistent kernel message buffer — dmesg history that survives across reboots, not part of stock AOSP/Qualcomm layout." },
+  { name:'nt_log', desc:"Nothing-specific general log storage, separate from the standard logfs partition." },
+  { name:'nt_reserve1', desc:"Nothing-specific reserved partition — purpose not publicly documented yet." },
+  { name:'nt_reserve2', desc:"Second Nothing-specific reserved partition — purpose not publicly documented yet." },
+  { name:'nt_uefi', desc:"Nothing-specific UEFI-related storage, separate from the standard uefivarstore partition." },
+];
+
 let slot = 'a';
 let openStage = 'abl';
 let selectedPartition = FIXED[4];
+let frSelected = FR_FIXED.find(p => p.name === 'misc');
 
 function renderSlotBtns() {
   const el = document.getElementById('slotbtns');
@@ -266,10 +373,49 @@ function renderPartitions() {
   panel.innerHTML = `<div class="detail"><div class="detail-name">${selectedPartition.name}</div><p class="body">${selectedPartition.desc}</p>${extra}</div>`;
 }
 
+function renderFrogger() {
+  const abEl = document.getElementById('frAbChips');
+  abEl.innerHTML = '';
+  FR_AB.forEach(p => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (frSelected && frSelected.name === p.name ? ' active' : '');
+    chip.textContent = `${p.name}_${slot}`;
+    chip.onclick = () => { frSelected = p; render(); };
+    abEl.appendChild(chip);
+  });
+
+  const fixedEl = document.getElementById('frFixedChips');
+  fixedEl.innerHTML = '';
+  FR_FIXED.forEach(p => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (frSelected && frSelected.name === p.name ? ' active' : '');
+    chip.textContent = p.name;
+    chip.onclick = () => { frSelected = p; render(); };
+    fixedEl.appendChild(chip);
+  });
+
+  const ntEl = document.getElementById('frNtChips');
+  ntEl.innerHTML = '';
+  FR_NOTHING.forEach(p => {
+    const chip = document.createElement('button');
+    chip.className = 'chip nothing' + (frSelected && frSelected.name === p.name ? ' active' : '');
+    chip.textContent = p.name;
+    chip.onclick = () => { frSelected = p; render(); };
+    ntEl.appendChild(chip);
+  });
+
+  const panel = document.getElementById('frDetailPanel');
+  if (!frSelected) { panel.innerHTML = ''; return; }
+  const isNothing = FR_NOTHING.some(p => p.name === frSelected.name);
+  const label = isNothing ? `${frSelected.name} <span style="color:var(--red);font-family:var(--f-mono);font-size:11px;">— nothing-specific</span>` : frSelected.name;
+  panel.innerHTML = `<div class="detail"><div class="detail-name">${label}</div><p class="body">${frSelected.desc}</p></div>`;
+}
+
 function render() {
   renderSlotBtns();
   renderStages();
   renderPartitions();
+  renderFrogger();
 }
 render();
 
@@ -278,4 +424,4 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 }
 </script>
 </body>
-v2</html>
+</html>
