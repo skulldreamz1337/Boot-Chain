@@ -92,6 +92,21 @@
   .detail-name { font-family: var(--f-mono); font-size:14px; color: var(--amber); font-weight:600; margin-bottom:6px; }
   .detail p.body { font-size:14px; line-height:1.6; color: var(--text); margin:0; }
 
+
+  .facts { display:grid; grid-template-columns: max-content 1fr; gap:6px 14px; padding:14px 16px; border-radius:10px; background: var(--panel); border:1px solid var(--border); margin-bottom:20px; font-size:13px; }
+  .facts dt { font-family: var(--f-mono); color: var(--text-dimmer); font-size:12px; }
+  .facts dd { margin:0; color: var(--text-dim); font-family: var(--f-mono); font-size:12.5px; word-break: break-word; }
+  .search { width:100%; padding:10px 12px; border-radius:8px; background: var(--panel-alt); border:1px solid var(--border); color: var(--text); font-family: var(--f-mono); font-size:13px; margin-bottom:20px; }
+  .search:focus { outline:none; border-color: var(--amber); }
+  .meta { display:flex; flex-wrap:wrap; gap:6px 16px; font-family: var(--f-mono); font-size:12px; color: var(--text-dim); margin-bottom:10px; }
+  .meta b { color: var(--text); font-weight:500; }
+  .chip.undoc { border-style: dashed; }
+  .tag { font-family: var(--f-mono); font-size:11px; margin-left:6px; }
+  .lunmap { width:100%; border-collapse: collapse; font-size:12.5px; margin-bottom:24px; }
+  .lunmap td { padding:7px 8px; border-top:1px solid var(--border); vertical-align: top; color: var(--text-dim); }
+  .lunmap td:first-child { font-family: var(--f-mono); color: var(--amber); white-space: nowrap; }
+  .empty { font-size:13px; color: var(--text-dimmer); margin:0 0 20px; }
+
   footer { font-family: var(--f-mono); font-size:12px; color: var(--text-dimmer); border-top:1px solid var(--border); padding-top:20px; margin-top:12px; }
 </style>
 </head>
@@ -99,7 +114,7 @@
 <div class="wrap">
   <div class="eyebrow">Field reference — Android Verified Boot</div>
   <h1>Boot Chain</h1>
-  <p class="lede">Power-on to system, one verified stage at a time — with the partition layout it depends on. Built around the parts that actually bit you on froggerPro and fogo.</p>
+  <p class="lede">Power-on to system, one verified stage at a time — with the partition layout it depends on. Built around the parts that actually bit you on froggerPro, fogo and Pong.</p>
 
   <div class="slotbar">
     <div class="slotbar-label">↺ active slot</div>
@@ -142,6 +157,42 @@
     <div class="chips" id="frNtChips"></div>
 
     <div id="frDetailPanel"></div>
+  </section>
+
+
+  <section>
+    <h2>Device dump — Pong</h2>
+    <p class="sub">Captured Oct 1, 2026 on Nothing Phone 2 (SM8475) with <b>blockdev --getsize64</b> over every entry in <b>/dev/block/bootdevice/by-name/</b>, plus <b>lpdump</b> for super. 109 entries, 76 names. Sizes and block devices are exact.</p>
+
+    <dl class="facts">
+      <dt>firmware</dt><dd>B4.1-260818-1726 · Android 16</dd>
+      <dt>kernel</dt><dd>5.10.252-android12-9 (Google GKI)</dd>
+      <dt>boot image</dt><dd>header v4 · no init_boot</dd>
+      <dt>active slot</dt><dd>a</dd>
+      <dt>root</dt><dd>Magisk 31.0 in boot ramdisk</dd>
+    </dl>
+
+    <div class="group-label">Storage areas (UFS logical units)</div>
+    <table class="lunmap" id="pgLuns"></table>
+
+    <input class="search" id="pgSearch" type="search" placeholder="Filter partitions — e.g. boot, modem, nt_" autocomplete="off" />
+
+    <div class="group-label">Per-slot (A/B) — <span id="pgAbCount"></span></div>
+    <div class="chips" id="pgAbChips"></div>
+
+    <div class="group-label">Fixed / single — <span id="pgFixedCount"></span></div>
+    <div class="chips" id="pgFixedChips"></div>
+
+    <div class="group-label">Nothing-specific — <span id="pgNtCount"></span></div>
+    <div class="chips" id="pgNtChips"></div>
+
+    <div class="group-label">Dynamic — inside super (sda6, 7 GiB)</div>
+    <div class="superbox">
+      <div class="chips" id="pgDynChips"></div>
+      <p class="note">From lpdump: groups qti_dynamic_partitions_a / _b. Pong has no system_dlkm, unlike froggerPro. Dashed chips = purpose not publicly documented.</p>
+    </div>
+
+    <div id="pgDetailPanel"></div>
   </section>
 
   <footer>skulldreamz — personal reference, works offline</footer>
@@ -270,6 +321,310 @@ const FR_NOTHING = [
   { name:'nt_reserve2', desc:"Second Nothing-specific reserved partition — purpose not publicly documented yet." },
   { name:'nt_uefi', desc:"Nothing-specific UEFI-related storage, separate from the standard uefivarstore partition." },
 ];
+
+
+// Pong (Nothing Phone 2) — raw output, Oct 1 2026, B4.1-260818-1726:
+// for p in /dev/block/bootdevice/by-name/*; do echo "name realdev bytes"; done
+const PONG_DUMP = `ALIGN_TO_128K_1 sdd1 106496
+ALIGN_TO_128K_2 sdf1 106496
+abl_a sde10 8388608
+abl_b sde38 8388608
+aop_a sde2 524288
+aop_b sde30 524288
+aop_config_a sde3 524288
+aop_config_b sde31 524288
+apdp sdb5 262144
+apdpb sdc5 262144
+bluetooth_a sde7 4194304
+bluetooth_b sde35 4194304
+boot_a sde13 100663296
+boot_b sde41 100663296
+cdt sdd2 131072
+connsec sde73 131072
+cpucp_a sde22 1048576
+cpucp_b sde50 1048576
+ddr sdd3 1048576
+devcfg_a sde14 131072
+devcfg_b sde42 131072
+devinfo sde56 4096
+dip sde57 1048576
+dsp_a sde11 67108864
+dsp_b sde39 67108864
+dtbo_a sde17 25165824
+dtbo_b sde45 25165824
+featenabler_a sde23 131072
+featenabler_b sde51 131072
+frp sda5 524288
+fsc sdf5 131072
+fsg sdf4 3145728
+hyp_a sde5 8388608
+hyp_b sde33 8388608
+imagefv_a sde19 2097152
+imagefv_b sde47 2097152
+keymaster_a sde12 524288
+keymaster_b sde40 524288
+keystore sda4 524288
+limits sde59 4096
+limits-cdsp sde60 4096
+logfs sde62 8388608
+mdcompress sde72 20971520
+mdtp_a sde9 33554432
+mdtp_b sde37 33554432
+mdtpsecapp_a sde8 4194304
+mdtpsecapp_b sde36 4194304
+metadata sda11 16777216
+misc sda3 1048576
+modem_a sde6 314572800
+modem_b sde34 314572800
+modemst1 sdf2 3145728
+modemst2 sdf3 3145728
+multiimgoem_a sdb4 32768
+multiimgoem_b sdc4 32768
+multiimgqti_a sdb3 32768
+multiimgqti_b sdc3 32768
+nt_kmsg sde64 67108864
+nt_log sde63 268435456
+nt_reserve1 sde66 67108864
+nt_reserve2 sde67 67108864
+nt_uefi sde65 67108864
+persist sda2 33554432
+qmcs sde25 31457280
+qupfw_a sde15 81920
+qupfw_b sde43 81920
+qweslicstore_a sde26 262144
+qweslicstore_b sde53 262144
+rawdump sda12 268435456
+recovery_a sde27 104857600
+recovery_b sde54 104857600
+rtice sde76 524288
+secdata sde70 28672
+shrm_a sde20 131072
+shrm_b sde48 131072
+splash sde58 34226176
+spunvm sde75 33554432
+ssd sda1 8192
+storsec sde68 131072
+super sda6 7516192768
+toolsfv sde61 1048576
+tz_a sde4 4194304
+tz_b sde32 4194304
+tzsc sde74 131072
+uefi_a sde1 5242880
+uefi_b sde29 5242880
+uefisecapp_a sde18 2097152
+uefisecapp_b sde46 2097152
+uefivarstore sde69 524288
+userdata sda13 241547554816
+vbmeta_a sde16 65536
+vbmeta_b sde44 65536
+vbmeta_system_a sda7 65536
+vbmeta_system_b sda8 65536
+vbmeta_vendor_a sda9 65536
+vbmeta_vendor_b sda10 65536
+vendor_boot_a sde24 100663296
+vendor_boot_b sde52 100663296
+vm-bootsys_a sde21 274878464
+vm-bootsys_b sde49 274878464
+vm-data sde71 34226176
+xbl_a sdb1 6291456
+xbl_b sdc1 6291456
+xbl_config_a sdb2 524288
+xbl_config_b sdc2 524288
+xbl_ramdump_a sde28 2097152
+xbl_ramdump_b sde55 2097152
+xbl_sc_logs sde78 131072
+xbl_sc_test_mode sde77 65536`;
+
+const PONG_SUPER = ['system','system_ext','product','vendor','vendor_dlkm','odm'];
+
+const PONG_LUNS = [
+  ['sda', "Main data unit: userdata, super, persist, metadata, misc, frp, keystore, rawdump, ssd, vbmeta_system/vendor."],
+  ['sdb', "Boot unit A: xbl_a, xbl_config_a, multiimg*_a, apdp. The SoC loads its first bootloader from here for slot a."],
+  ['sdc', "Boot unit B: the same set for slot b, plus apdpb."],
+  ['sdd', "Low-level config: cdt and ddr (memory training)."],
+  ['sde', "Most firmware and both slots of boot, vendor_boot, dtbo, modem, recovery, plus the nt_ partitions."],
+  ['sdf', "Modem storage: modemst1, modemst2, fsg, fsc."],
+];
+
+// undoc:true = purpose not publicly documented; written as a best reading, not a fact.
+const PONG_DESC = {
+  abl: { d:"Android Bootloader — see stage 3. Reads the active slot, loads boot/vendor_boot/dtbo, handles fastboot." },
+  aop: { d:"Always-On Processor firmware — runs low-power housekeeping while the main CPU sleeps." },
+  aop_config: { d:"Board-specific configuration loaded by the AOP firmware." },
+  bluetooth: { d:"Bluetooth subsystem firmware." },
+  boot: { d:"GKI kernel plus the generic ramdisk. On Pong both live here: header v4, and there is no init_boot partition.",
+    note:"Oct 1 backup: boot_a = 100,663,296 bytes, sha256 0365e6a3…76328a6f. Unpacked: 46.9 MB raw kernel (5.10.252-android12-9) + 1.2 MB lz4 ramdisk. Magisk 31.0 lives in this ramdisk, so replacing the whole image removes root." },
+  cpucp: { d:"CPU Control Processor firmware — CPU power and frequency management on newer Snapdragons." },
+  devcfg: { d:"TrustZone device configuration — access policy for TZ-protected hardware." },
+  dsp: { d:"Hexagon DSP firmware for audio, sensors and compute offload." },
+  dtbo: { d:"Device tree overlays layered onto the base device tree at boot.", note:"Meteoric V6's AnyKernel3 zip replaces this with its own June 2025 dtbo — one reason a mismatched kernel package is risky on B4.1." },
+  featenabler: { d:"Feature-enablement blob that switches SoC features on per model." },
+  hyp: { d:"Hypervisor image (Qualcomm Gunyah on this chip), started by XBL before the rest of the chain." },
+  imagefv: { d:"UEFI firmware volume bundling early-boot UEFI drivers." },
+  keymaster: { d:"Keymaster/KeyMint trusted app — backs Android's hardware keystore and /data encryption keys." },
+  mdtp: { d:"Qualcomm Mobile Device Theft Protection image." },
+  mdtpsecapp: { d:"TrustZone app that enforces MDTP theft protection." },
+  modem: { d:"Baseband firmware (300 MiB per slot) — cellular, plus Wi-Fi/GPS firmware on Qualcomm devices." },
+  multiimgoem: { d:"OEM-signed container for extra firmware images." },
+  multiimgqti: { d:"Qualcomm-signed container for extra firmware images." },
+  qupfw: { d:"QUP firmware — the serial bus controllers (I2C, SPI, UART)." },
+  qweslicstore: { d:"Qualcomm license/entitlement store." },
+  recovery: { d:"Dedicated recovery partition. Pong keeps recovery separate from boot, so flashing recovery never touches boot_a or root.",
+    note:"Your own PBRP build lives in recovery_a (sde27). Nothing devices can't fastboot boot a recovery image, so every test is a real flash here." },
+  shrm: { d:"Shared memory configuration between the main processor and modem/DSP." },
+  tz: { d:"TrustZone secure OS." },
+  uefi: { d:"UEFI-based firmware stage used by Qualcomm's boot chain on this platform." },
+  uefisecapp: { d:"UEFI secure app — handles protected key operations such as DRM." },
+  vbmeta: { d:"AVB root of trust — see stage 4." },
+  vbmeta_system: { d:"AVB sub-chain covering system-side dynamic partitions in super." },
+  vbmeta_vendor: { d:"AVB sub-chain covering the vendor dynamic partitions." },
+  vendor_boot: { d:"Vendor ramdisk, base device tree (DTB) and first-stage kernel modules, loaded alongside boot.",
+    note:"Holds early-load modules that stock vendor_dlkm drivers depend on. The Meteoric zip writes its own DTB here." },
+  'vm-bootsys': { d:"Boot image for the system virtual machine run under the hypervisor." },
+  xbl: { d:"eXtensible Bootloader — see stage 2. Brings up memory and loads the early firmware." },
+  xbl_config: { d:"Configuration data used by XBL." },
+  xbl_ramdump: { d:"Image XBL uses to collect a RAM dump after a crash." },
+
+  ALIGN_TO_128K_1: { d:"Padding that keeps later partitions aligned to 128 KiB. Holds no data." },
+  ALIGN_TO_128K_2: { d:"Second alignment padding partition." },
+  apdp: { d:"Debug policy data for the application processor." },
+  apdpb: { d:"Backup copy of apdp, on the slot-b boot unit." },
+  cdt: { d:"Chip Dependent Table — board and SoC identifiers read very early in boot." },
+  connsec: { d:"Connectivity security data for Wi-Fi/Bluetooth provisioning." },
+  ddr: { d:"DDR memory training data, reused so memory comes up quickly." },
+  devinfo: { d:"Device info — stores state such as bootloader lock/unlock." },
+  dip: { d:"Device integrity data used by Qualcomm's MDTP theft protection." },
+  frp: { d:"Factory Reset Protection state — survives a factory reset on purpose." },
+  fsc: { d:"Modem file system config." },
+  fsg: { d:"Modem golden backup of its file system." },
+  keystore: { d:"Secure key storage, separate from the keymaster firmware." },
+  limits: { d:"Thermal/power limits data for the CPU." },
+  'limits-cdsp': { d:"Thermal/power limits data for the compute DSP." },
+  logfs: { d:"Small persistent log file system that survives reboots." },
+  mdcompress: { d:"Buffer for compressing modem crash dumps." },
+  metadata: { d:"Metadata encryption keys needed to unlock /data before it mounts. Wiping it breaks decryption." },
+  misc: { d:"Bootloader Control Block (BCB) — the command ABL reads every boot (normal, recovery, fastboot).",
+    note:"A boot-to-recovery loop usually means a stale command here. Clearing it is a reset, not a diagnosis." },
+  modemst1: { d:"Modem NV storage — calibration and IMEI data. Back it up before anything modem-related." },
+  modemst2: { d:"Second copy of modemst1." },
+  persist: { d:"Sensor calibration and persistent config. Survives a factory reset; losing it can break sensors." },
+  qmcs: { d:"Qualcomm data partition.", undoc:true },
+  rawdump: { d:"Storage for raw RAM dumps after a crash (256 MiB)." },
+  rtice: { d:"Qualcomm security partition.", undoc:true },
+  secdata: { d:"Security-related persistent data." },
+  splash: { d:"Boot splash image shown by the bootloader at power-on." },
+  spunvm: { d:"Secure Processing Unit non-volatile storage." },
+  ssd: { d:"Secure Software Download data used during factory provisioning." },
+  storsec: { d:"UFS storage security configuration." },
+  super: { d:"Dynamic partition container (7 GiB) — see the super box below. Its logical partitions are created and resized inside it." },
+  toolsfv: { d:"UEFI firmware volume for diagnostic tools." },
+  tzsc: { d:"TrustZone-related configuration.", undoc:true },
+  uefivarstore: { d:"UEFI variable storage that persists across boots." },
+  userdata: { d:"Your /data — apps, settings and files (≈225 GiB). Encrypted with keys from metadata and the TEE." },
+  'vm-data': { d:"Persistent storage for the virtual machines run under the hypervisor." },
+  xbl_sc_logs: { d:"Logs from XBL's secondary core. Debug only." },
+  xbl_sc_test_mode: { d:"Test-mode flag/data for XBL's secondary core. Debug only." },
+
+  nt_kmsg: { d:"Nothing's persistent kernel log buffer — dmesg history that survives reboots." },
+  nt_log: { d:"Nothing's general log storage (256 MiB)." },
+  nt_reserve1: { d:"Nothing reserved partition.", undoc:true },
+  nt_reserve2: { d:"Nothing reserved partition.", undoc:true },
+  nt_uefi: { d:"Nothing UEFI-related storage, separate from uefivarstore.", undoc:true },
+};
+
+const PONG_SUPER_DESC = {
+  system: "Android's core OS: framework and system apps.",
+  system_ext: "System extensions — Nothing's own system-level additions.",
+  product: "Product-specific apps and settings.",
+  vendor: "Qualcomm and Nothing hardware support: HALs and firmware userspace.",
+  vendor_dlkm: "Vendor kernel modules — the 286 .ko drivers that must match the running kernel's symbols.",
+  odm: "Device-specific (ODM) customizations.",
+};
+
+function fmtBytes(n) {
+  const u = ['B','KiB','MiB','GiB'];
+  let i = 0, v = n;
+  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+  return (v % 1 === 0 ? v : v.toFixed(1)) + ' ' + u[i];
+}
+
+const PONG = (() => {
+  const map = new Map();
+  PONG_DUMP.trim().split('\n').forEach(line => {
+    const [full, dev, bytes] = line.trim().split(/\s+/);
+    const m = full.match(/^(.*)_(a|b)$/);
+    const base = m ? m[1] : full;
+    if (!map.has(base)) map.set(base, { name: base, slotted: !!m, devs: {}, size: Number(bytes) });
+    const e = map.get(base);
+    if (m) e.devs[m[2]] = dev; else e.dev = dev;
+  });
+  const all = [...map.values()];
+  all.forEach(e => { const info = PONG_DESC[e.name] || { d:'No description yet.', undoc:true }; Object.assign(e, info); });
+  return {
+    ab: all.filter(e => e.slotted),
+    fixed: all.filter(e => !e.slotted && !e.name.startsWith('nt_')),
+    nt: all.filter(e => !e.slotted && e.name.startsWith('nt_')),
+  };
+})();
+
+let pgSelected = PONG.ab.find(e => e.name === 'boot');
+let pgFilter = '';
+
+function pgChips(id, list, extraClass) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  const shown = list.filter(e => !pgFilter || e.name.toLowerCase().includes(pgFilter));
+  shown.forEach(e => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (extraClass ? ' ' + extraClass : '') + (e.undoc ? ' undoc' : '') + (pgSelected && pgSelected.name === e.name ? ' active' : '');
+    chip.textContent = e.slotted ? `${e.name}_${slot}` : e.name;
+    chip.onclick = () => { pgSelected = e; render(); };
+    el.appendChild(chip);
+  });
+  if (!shown.length) el.innerHTML = '<p class="empty">No match.</p>';
+  return shown.length;
+}
+
+function renderPong() {
+  const lt = document.getElementById('pgLuns');
+  lt.innerHTML = PONG_LUNS.map(([d, t]) => `<tr><td>${d}</td><td>${t}</td></tr>`).join('');
+
+  document.getElementById('pgAbCount').textContent = (n => n + (n === 1 ? ' name' : ' names') + ' × 2 slots')(pgChips('pgAbChips', PONG.ab));
+  document.getElementById('pgFixedCount').textContent = pgChips('pgFixedChips', PONG.fixed);
+  document.getElementById('pgNtCount').textContent = pgChips('pgNtChips', PONG.nt, 'nothing');
+
+  const dyn = document.getElementById('pgDynChips');
+  dyn.innerHTML = '';
+  PONG_SUPER.filter(n => !pgFilter || n.includes(pgFilter)).forEach(n => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (pgSelected && pgSelected.name === n ? ' active' : '');
+    chip.textContent = `${n}_${slot}`;
+    chip.onclick = () => { pgSelected = { name: n, logical: true, d: PONG_SUPER_DESC[n] }; render(); };
+    dyn.appendChild(chip);
+  });
+  if (!dyn.children.length) dyn.innerHTML = '<p class="empty">No match.</p>';
+
+  const panel = document.getElementById('pgDetailPanel');
+  const e = pgSelected;
+  if (!e) { panel.innerHTML = ''; return; }
+  let meta = '';
+  if (e.logical) {
+    meta = `<div class="meta"><span>logical · inside <b>super (sda6)</b></span><span>slot <b>${slot}</b></span></div>`;
+  } else {
+    const dev = e.slotted ? e.devs[slot] : e.dev;
+    const devs = e.slotted ? ` <span>a: <b>${e.devs.a}</b> · b: <b>${e.devs.b}</b></span>` : '';
+    meta = `<div class="meta"><span>/dev/block/<b>${dev}</b></span>${devs}<span>size <b>${fmtBytes(e.size)}</b> (${e.size.toLocaleString()} bytes)</span></div>`;
+  }
+  const nameLine = (e.slotted ? `${e.name}_${slot}` : e.logical ? `${e.name}_${slot}` : e.name)
+    + (e.name.startsWith('nt_') ? '<span class="tag" style="color:var(--red)">— nothing-specific</span>' : '')
+    + (e.undoc ? '<span class="tag" style="color:var(--text-dimmer)">— purpose not publicly documented</span>' : '');
+  const note = e.note ? `<div class="field"><div class="field-label">▸ field note — Pong</div><p>${e.note}</p></div>` : '';
+  panel.innerHTML = `<div class="detail"><div class="detail-name">${nameLine}</div>${meta}<p class="body">${e.d}</p>${note}</div>`;
+}
+
+document.addEventListener('input', (ev) => {
+  if (ev.target && ev.target.id === 'pgSearch') { pgFilter = ev.target.value.trim().toLowerCase(); render(); }
+});
 
 let slot = 'a';
 let openStage = 'abl';
@@ -416,6 +771,7 @@ function render() {
   renderStages();
   renderPartitions();
   renderFrogger();
+  renderPong();
 }
 render();
 

@@ -1,5 +1,5 @@
-const CACHE = 'boot-chain-v1';
-const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'boot-chain-v2';
+const ASSETS = ['./', './index.html', './manifest.json', './icon-192-v2.png', './icon-512-v2.png', './icon-512-maskable.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).catch(() => {}));
